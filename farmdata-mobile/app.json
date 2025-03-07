@@ -5,11 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    
     "updates": {
       "fallbackToCacheTimeout": 0
     },
@@ -21,9 +17,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "package": "com.ben_nyakaz.farmdatamobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -49,6 +46,11 @@
         "asset": "./assets/fonts/Inter-Regular.otf",
         "family": "Inter-Regular"
       }
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "481e6670-0075-4073-b961-bb79a7456c5a"
+      }
+    }
   }
 }

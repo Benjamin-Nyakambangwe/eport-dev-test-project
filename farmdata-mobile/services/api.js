@@ -11,7 +11,7 @@ import {
 // Set API URL for connecting to your localhost backend
 // For Android emulator: use 10.0.2.2 to refer to the host machine's localhost
 // For iOS simulator: localhost usually works directly
-export const API_URL = 'http://10.0.2.2:8000' 
+export const API_URL = 'https://eport.dealpusher.com' 
 
 
 const api = axios.create({

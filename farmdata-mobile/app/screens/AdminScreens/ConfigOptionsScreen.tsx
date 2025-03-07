@@ -32,6 +32,7 @@ import {
 } from "../../../services/database";
 import { Ionicons } from "@expo/vector-icons";
 import globalStyles, { COLORS, FONTS } from "../../../styles/globalStyles";
+import NetInfo from "@react-native-community/netinfo";
 
 // Define interfaces for data models
 interface FarmType {
@@ -55,7 +56,7 @@ interface FormData {
 
 const ConfigOptionsScreen = () => {
   const navigation = useNavigation();
-  const { logout } = useAuth();
+  const { logout, user, login, offlineMode } = useAuth();
   const [farmTypes, setFarmTypes] = useState<FarmType[]>([]);
   const [crops, setCrops] = useState<Crop[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,15 +70,58 @@ const ConfigOptionsScreen = () => {
     description: "",
   });
   const [online, setOnline] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
 
   useEffect(() => {
     loadData();
     checkOnlineStatus();
+
+    // Regular network status checks
+    const networkCheckInterval = setInterval(() => {
+      checkOnlineStatus();
+    }, 3000); // Check every 3 seconds
+
+    // Set up a network status listener for immediate notification
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const wasOffline = !online;
+      const isNowOnline = !!state.isConnected; // Double negation to ensure boolean
+
+      // Update online status immediately
+      setOnline(isNowOnline);
+
+      // If we were offline but now we're online, try to reconnect
+      if (wasOffline && isNowOnline) {
+        handleAutoReconnect();
+      }
+    });
+
+    // Cleanup listener and interval on unmount
+    return () => {
+      unsubscribe();
+      clearInterval(networkCheckInterval);
+    };
   }, []);
 
   const checkOnlineStatus = async () => {
-    const status = await isOnline();
-    setOnline(status);
+    try {
+      // Quick check using NetInfo first
+      const netInfoState = await NetInfo.fetch();
+      const quickStatus = !!netInfoState.isConnected;
+
+      // Update UI immediately with quick check result
+      setOnline(quickStatus);
+
+      // Then do a more thorough check
+      const thoroughStatus = await isOnline(true);
+
+      // Update with more accurate result
+      setOnline(thoroughStatus);
+
+      return thoroughStatus;
+    } catch (error) {
+      console.error("Error checking online status:", error);
+      return false;
+    }
   };
 
   const loadData = async () => {
@@ -210,36 +254,44 @@ const ConfigOptionsScreen = () => {
 
       console.log("Clean itemData:", itemData);
 
-      const isConnected = await isOnline();
+      // Check online status again to be sure
+      const isConnected = await checkOnlineStatus();
       let newItem: FarmType | Crop;
 
       if (modalType === "farmType") {
         if (isConnected) {
           // Online: create directly via API
+          console.log("Creating farm type via API...");
           const response = await createFarmType(itemData);
           newItem = response.data;
           setFarmTypes([...farmTypes, newItem]);
         } else {
           try {
             console.log("Creating offline farm type...");
-            newItem = await saveOfflineFarmType(itemData);
-            console.log("Created farm type successfully:", newItem);
 
-            // Only update state if we got a valid response
-            if (newItem && newItem.id) {
-              setFarmTypes((current) => [...current, newItem]);
-              Alert.alert(
-                "Saved Offline",
-                "This farm type is saved on your device and will sync when you reconnect."
-              );
-            } else {
-              throw new Error("Failed to save farm type");
+            // Use the existing saveOfflineFarmType function instead
+            // which is already properly implemented
+            const tempItem = await saveOfflineFarmType(itemData);
+
+            if (!tempItem || !tempItem.id) {
+              throw new Error("Failed to save farm type to local database");
             }
+
+            console.log("Created farm type successfully:", tempItem);
+
+            // Update the state
+            setFarmTypes((current) => [...current, tempItem]);
+            Alert.alert(
+              "Saved Offline",
+              "This farm type is saved on your device and will sync when you reconnect."
+            );
           } catch (dbError) {
             console.error("Database error creating farm type:", dbError);
             Alert.alert(
               "Database Error",
-              `Could not save farm type: ${dbError.message}`
+              `Could not save farm type: ${
+                dbError instanceof Error ? dbError.message : "Unknown error"
+              }`
             );
             throw dbError;
           }
@@ -247,24 +299,52 @@ const ConfigOptionsScreen = () => {
       } else if (modalType === "crop") {
         if (isConnected) {
           // Online: create directly via API
+          console.log("Creating crop via API...");
           const response = await createCrop(itemData);
           newItem = response.data;
           setCrops([...crops, newItem]);
         } else {
-          // Offline: save to local database
-          newItem = await saveOfflineCrop(itemData);
-          setCrops([...crops, newItem]);
-          Alert.alert(
-            "Saved Offline",
-            "This crop is saved on your device and will sync when you reconnect."
-          );
+          try {
+            console.log("Creating offline crop...");
+
+            // Use the existing saveOfflineCrop function instead
+            // which is already properly implemented
+            const tempItem = await saveOfflineCrop(itemData);
+
+            if (!tempItem || !tempItem.id) {
+              throw new Error("Failed to save crop to local database");
+            }
+
+            console.log("Created crop successfully:", tempItem);
+
+            // Update the state
+            setCrops((current) => [...current, tempItem]);
+            Alert.alert(
+              "Saved Offline",
+              "This crop is saved on your device and will sync when you reconnect."
+            );
+          } catch (dbError) {
+            console.error("Database error creating crop:", dbError);
+            Alert.alert(
+              "Database Error",
+              `Could not save crop: ${
+                dbError instanceof Error ? dbError.message : "Unknown error"
+              }`
+            );
+            throw dbError;
+          }
         }
       }
 
       setFormData({ name: "", description: "" });
     } catch (error) {
       console.error(`Error in handleAddItem for ${modalType}:`, error);
-      Alert.alert("Error", `Failed to create ${modalType}: ${error.message}`);
+      Alert.alert(
+        "Error",
+        `Failed to create ${modalType}: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setLoading(false);
     }
@@ -539,6 +619,50 @@ const ConfigOptionsScreen = () => {
     }
   };
 
+  // New function to handle auto reconnection when coming back online
+  const handleAutoReconnect = async () => {
+    try {
+      // Verify we're actually online with our more thorough check
+      const isNetworkAvailable = await isOnline(true);
+      if (!isNetworkAvailable) return;
+
+      console.log("Network connection restored, attempting to reconnect...");
+      setReconnecting(true);
+
+      // Get stored credentials from AsyncStorage
+      const AsyncStorage =
+        require("@react-native-async-storage/async-storage").default;
+      const username = await AsyncStorage.getItem("offlineUsername");
+      const passwordHash = await AsyncStorage.getItem("offlinePasswordHash");
+
+      if (username && passwordHash) {
+        // Get user data to check if we need to re-login
+        const userData = await AsyncStorage.getItem("user");
+        const token = await AsyncStorage.getItem("token");
+
+        // If user data exists but we're in offline mode, try to reconnect
+        if (userData && (!token || offlineMode)) {
+          console.log("Attempting automatic re-authentication...");
+
+          // Use AuthContext's login with stored credentials
+          // This is typically handled by the AuthContext's tryOnlineLogin method
+          await loadData(); // Refresh our data first
+
+          // Show brief reconnection message
+          Alert.alert(
+            "Reconnected",
+            "Your device is now online and data has been refreshed.",
+            [{ text: "OK" }]
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error during auto-reconnect:", error);
+    } finally {
+      setReconnecting(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -554,7 +678,14 @@ const ConfigOptionsScreen = () => {
         <Text style={styles.title}>Config</Text>
 
         <View style={styles.headerActions}>
-          <SyncIndicator isOnline={online} onSync={loadData} />
+          {reconnecting ? (
+            <View style={styles.reconnecting}>
+              <ActivityIndicator size="small" color="#007bff" />
+              <Text style={styles.reconnectingText}>Reconnecting...</Text>
+            </View>
+          ) : (
+            <SyncIndicator isOnline={online} onSync={loadData} />
+          )}
 
           <TouchableOpacity
             style={styles.headerButton}
@@ -1017,6 +1148,19 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: COLORS.primary,
     marginTop: 2,
+  },
+  reconnecting: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e6f7ff",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  reconnectingText: {
+    fontSize: 12,
+    color: "#0066cc",
+    marginLeft: 4,
   },
 });
 

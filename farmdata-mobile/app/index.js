@@ -10,7 +10,6 @@ import ClerkDataCollectionScreen from './screens/ClerkScreens/DataCollectionScre
 import ClerkViewSubmissionsScreen from './screens/ClerkScreens/ViewSubmissionsScreen';
 import AdminConfigOptionsScreen from './screens/AdminScreens/ConfigOptionsScreen';
 import AdminManageUsersScreen from './screens/AdminScreens/ManageUsersScreen';
-
 // Import auth context
 import { AuthProvider, useAuth } from '../components/AuthContext';
 
@@ -24,14 +23,16 @@ const AppNavigator = () => {
     <Stack.Navigator>
       {!isLoggedIn ? (
         // Auth stack
+        
         <Stack.Screen 
           name="Login" 
           component={LoginScreen} 
           options={{ headerShown: false }} 
         />
+      
       ) : (
         // Role-based screens
-        userRole === 'clerk' ? (
+        userRole === "clerk" ? (
           // Clerk screens
           <>
             <Stack.Screen name="DataCollection" component={ClerkDataCollectionScreen} options={{ headerShown: false }} />

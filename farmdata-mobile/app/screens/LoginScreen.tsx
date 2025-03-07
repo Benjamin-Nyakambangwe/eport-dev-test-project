@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,15 +12,15 @@ import {
   Platform,
   ScrollView,
   Keyboard,
-  TouchableWithoutFeedback
-} from 'react-native';
-import { useAuth } from '../../components/AuthContext';
-import { isOnline } from '../../services/sync';
-import { Ionicons } from '@expo/vector-icons';
+  TouchableWithoutFeedback,
+} from "react-native";
+import { useAuth } from "../../components/AuthContext";
+import { isOnline } from "../../services/sync";
+import { Ionicons } from "@expo/vector-icons";
 
 const LoginScreen = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [networkStatus, setNetworkStatus] = useState(true);
@@ -38,45 +38,48 @@ const LoginScreen = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!username) newErrors.username = 'Username is required';
-    if (!password) newErrors.password = 'Password is required';
-    
+
+    if (!username) newErrors.username = "Username is required";
+    if (!password) newErrors.password = "Password is required";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async () => {
     if (!validateForm()) return;
-    
+
     Keyboard.dismiss();
     setLoading(true);
-    
+
     try {
       // Recheck network status before attempting login
       const online = await isOnline();
       setNetworkStatus(online);
-      
+
       if (!online) {
         Alert.alert(
-          'Offline Mode',
-          'You need an internet connection to login. Please check your connection and try again.'
+          "Offline Mode",
+          "You need an internet connection to login. Please check your connection and try again."
         );
         setLoading(false);
         return;
       }
-      
+
       const success = await login(username, password);
-      
+
       if (!success) {
         // Login function should handle errors, but just in case:
-        Alert.alert('Login Failed', 'Please check your credentials and try again.');
+        Alert.alert(
+          "Login Failed",
+          "Please check your credentials and try again."
+        );
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       Alert.alert(
-        'Login Error',
-        error.message || 'An unexpected error occurred. Please try again.'
+        "Login Error",
+        error.message || "An unexpected error occurred. Please try again."
       );
     } finally {
       setLoading(false);
@@ -84,12 +87,12 @@ const LoginScreen = () => {
   };
 
   const handleInputChange = (field, value) => {
-    if (field === 'username') setUsername(value);
-    if (field === 'password') setPassword(value);
-    
+    if (field === "username") setUsername(value);
+    if (field === "password") setPassword(value);
+
     // Clear error when typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }));
+      setErrors((prev) => ({ ...prev, [field]: null }));
     }
   };
 
@@ -99,82 +102,104 @@ const LoginScreen = () => {
       style={styles.container}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../assets/logo.png')}
+              source={require("../../assets/logo.png")}
               style={styles.logo}
               resizeMode="contain"
             />
             <Text style={styles.appName}>FarmData Mobile</Text>
-            <Text style={styles.tagline}>Data Collection for Agricultural Extension</Text>
+            <Text style={styles.tagline}>
+              Data Collection for Agricultural Extension
+            </Text>
           </View>
 
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>Login</Text>
-            
+
             {!networkStatus && (
               <View style={styles.offlineWarning}>
-                <Ionicons name="cloud-offline-outline" size={20} color="#dc3545" />
-                <Text style={styles.offlineText}>
-                  You are offline. Login requires an internet connection.
-                </Text>
+                <Ionicons
+                  name="cloud-offline-outline"
+                  size={20}
+                  color="#dc3545"
+                />
+                <Text style={styles.offlineText}>You are offline.</Text>
               </View>
             )}
-            
+
             <View style={styles.formGroup}>
               <Text style={styles.label}>Username</Text>
-              <View style={[
-                styles.inputContainer,
-                errors.username ? styles.inputError : null
-              ]}>
-                <Ionicons name="person-outline" size={20} color="#6c757d" style={styles.inputIcon} />
+              <View
+                style={[
+                  styles.inputContainer,
+                  errors.username ? styles.inputError : null,
+                ]}
+              >
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color="#6c757d"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your username"
                   placeholderTextColor="#adb5bd"
                   value={username}
-                  onChangeText={(value) => handleInputChange('username', value)}
+                  onChangeText={(value) => handleInputChange("username", value)}
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!loading}
                 />
               </View>
-              {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+              {errors.username && (
+                <Text style={styles.errorText}>{errors.username}</Text>
+              )}
             </View>
-            
+
             <View style={styles.formGroup}>
               <Text style={styles.label}>Password</Text>
-              <View style={[
-                styles.inputContainer,
-                errors.password ? styles.inputError : null
-              ]}>
-                <Ionicons name="lock-closed-outline" size={20} color="#6c757d" style={styles.inputIcon} />
+              <View
+                style={[
+                  styles.inputContainer,
+                  errors.password ? styles.inputError : null,
+                ]}
+              >
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#6c757d"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your password"
                   placeholderTextColor="#adb5bd"
                   value={password}
-                  onChangeText={(value) => handleInputChange('password', value)}
+                  onChangeText={(value) => handleInputChange("password", value)}
                   secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!loading}
                 />
               </View>
-              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+              {errors.password && (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              )}
             </View>
-            
+
             <TouchableOpacity
               style={[
                 styles.loginButton,
-                (!networkStatus || loading) ? styles.loginButtonDisabled : null
+                // !networkStatus || loading ? styles.loginButtonDisabled : null,
               ]}
               onPress={handleLogin}
-              disabled={!networkStatus || loading}
+              disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -185,14 +210,69 @@ const LoginScreen = () => {
                 </>
               )}
             </TouchableOpacity>
-            
+
             <View style={styles.offlineOptionsContainer}>
               <Text style={styles.offlineOptionsText}>
                 Need to work offline? Login first when online.
               </Text>
             </View>
           </View>
-          
+
+          <View style={styles.demoUsersCard}>
+            <View style={styles.demoHeaderContainer}>
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color="#007bff"
+              />
+              <Text style={styles.demoUsersTitle}>Demo Accounts</Text>
+            </View>
+
+            <View style={styles.demoUserContainer}>
+              <View style={styles.demoUserItem}>
+                <View style={styles.demoUserIcon}>
+                  <Ionicons
+                    name="person-circle-outline"
+                    size={24}
+                    color="#007bff"
+                  />
+                </View>
+                <View style={styles.demoUserDetails}>
+                  <Text style={styles.demoUserName}>Jane (Administrator)</Text>
+                  <Text style={styles.demoUserCred}>
+                    Username: <Text style={styles.demoUserValue}>jane</Text>
+                  </Text>
+                  <Text style={styles.demoUserCred}>
+                    Password:{" "}
+                    <Text style={styles.demoUserValue}>123456seven</Text>
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.demoUserItem}>
+                <View style={styles.demoUserIcon}>
+                  <Ionicons
+                    name="person-circle-outline"
+                    size={24}
+                    color="#28a745"
+                  />
+                </View>
+                <View style={styles.demoUserDetails}>
+                  <Text style={styles.demoUserName}>Joe (Clerk)</Text>
+                  <Text style={styles.demoUserCred}>
+                    Username: <Text style={styles.demoUserValue}>joe</Text>
+                  </Text>
+                  <Text style={styles.demoUserCred}>
+                    Password:{" "}
+                    <Text style={styles.demoUserValue}>123456seven</Text>
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
           <Text style={styles.versionText}>v1.0.0</Text>
         </ScrollView>
       </TouchableWithoutFeedback>
@@ -203,15 +283,15 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 24,
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   logo: {
@@ -221,20 +301,20 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#212529',
+    fontWeight: "bold",
+    color: "#212529",
     marginBottom: 8,
   },
   tagline: {
     fontSize: 16,
-    color: '#6c757d',
-    textAlign: 'center',
+    color: "#6c757d",
+    textAlign: "center",
   },
   formCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -243,28 +323,28 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
+    fontWeight: "bold",
+    color: "#212529",
     marginBottom: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   formGroup: {
     marginBottom: 20,
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 8,
-    color: '#212529',
+    color: "#212529",
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
     borderWidth: 1,
-    borderColor: '#ced4da',
+    borderColor: "#ced4da",
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   inputIcon: {
     paddingHorizontal: 12,
@@ -274,64 +354,124 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingRight: 12,
     fontSize: 16,
-    color: '#212529',
+    color: "#212529",
   },
   inputError: {
-    borderColor: '#dc3545',
+    borderColor: "#dc3545",
   },
   errorText: {
-    color: '#dc3545',
+    color: "#dc3545",
     fontSize: 14,
     marginTop: 6,
   },
   loginButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: "#007bff",
     borderRadius: 8,
     paddingVertical: 14,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 8,
     marginBottom: 16,
   },
   loginButtonDisabled: {
-    backgroundColor: '#adb5bd',
+    backgroundColor: "#adb5bd",
   },
   loginButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 8,
   },
   offlineWarning: {
-    backgroundColor: '#f8d7da',
+    backgroundColor: "#f8d7da",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   offlineText: {
-    color: '#721c24',
+    color: "#721c24",
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
   },
   offlineOptionsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 16,
   },
   offlineOptionsText: {
     fontSize: 14,
-    color: '#6c757d',
-    textAlign: 'center',
+    color: "#6c757d",
+    textAlign: "center",
   },
   versionText: {
-    color: '#adb5bd',
+    color: "#adb5bd",
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 12,
+  },
+  demoUsersCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  demoHeaderContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  demoUsersTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#343a40",
+    marginLeft: 8,
+  },
+  demoUserContainer: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  demoUserItem: {
+    flexDirection: "row",
+    padding: 12,
+  },
+  demoUserIcon: {
+    marginRight: 12,
+    justifyContent: "center",
+  },
+  demoUserDetails: {
+    flex: 1,
+  },
+  demoUserName: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#212529",
+    marginBottom: 4,
+  },
+  demoUserCred: {
+    fontSize: 14,
+    color: "#6c757d",
+    marginBottom: 2,
+  },
+  demoUserValue: {
+    fontWeight: "500",
+    color: "#495057",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#dee2e6",
+    marginHorizontal: 12,
   },
 });
 
